@@ -3,6 +3,7 @@ Small utility to sensibly calculate materials quantities during inorganic synthe
 
 ## Quick Start
 Requires PHP. Then just run via the command line:
-```php chemsolve.php
+```php
+php chemsolve.php
 ```
 
