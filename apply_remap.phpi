@@ -1,0 +1,58 @@
+<?php
+// Removes complete units of $map[0] from $tgtArr and replace with $map[1]
+function apply_remap($tgt, $map) {
+    $tgtArr = array_merge($tgt);
+    $warnings = array();
+
+    for ($i = 0; $i <count($tgtArr); $i++) {
+        if (is_array($tgtArr[$i][0][0])) {
+             $rv = apply_remap($tgtArr[$i][0],$map);
+             $tgtArr[$i][0] = $rv[0];
+             for ($j = 0; $j < count($rv[1]); $j++)
+                 $warnings[] = $rv[1][$j];
+        }
+    }
+
+        $cm = $map[0];
+        $good = true;
+        $oldk = 0;
+        for ($j = 0; $j < count($cm) && $good; $j++) {
+            $k = $oldk;
+            while ($k < count($tgtArr)) {
+                if (!is_array($tgtArr[$k][0][0])) {
+                    if (strcmp(implode($tgtArr[$k][0]), implode($cm[$j][0])) == 0) {
+                        if ($tgtArr[$k][1] != $cm[$j][1]) { $good = false; }
+                        $oldk = $k;
+                        $k = count($tgtArr)+2;
+                    }
+                }
+                $k++;
+            }
+            if ($k != count($tgtArr)+3) $good = false;
+        }
+        // If we get here and $good is good, there is a unit to be replaced.
+        // So do that.
+        // Removal and replacement
+        if ($good == true) {
+          $oldk = 0;
+          for ($j = 0; $j < count($cm); $j++) {
+            $k = $oldk;
+            while ($k < count($tgtArr)) {
+                if (!is_array($tgtArr[$k][0][0])) {
+                    if (strcmp(implode($tgtArr[$k][0]), implode($cm[$j][0])) == 0) {
+                        if ($j == 0) {
+                            $tgtArr[$k][0] = $map[1];
+                            $tgtArr[$k][1] = '1';
+                        } else $tgtArr[$k][1] = '0';
+                        $oldk = $k;
+                        $k = count($tgtArr)+2;
+                    }
+                }
+                $k++;
+            }
+          }            
+        }
+
+    return array($tgtArr, $warnings);
+}
+?>

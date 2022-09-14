@@ -1,0 +1,14 @@
+<?php
+function computeMW($compoundArr) {
+    $mw = 0;
+    for ($i = 0; $i < count($compoundArr); $i++) {
+        if (is_array($compoundArr[$i][0][0])) {
+            $rv = computeMW($compoundArr[$i][0]);
+            $mw += $rv[0]*$compoundArr[$i][1];
+        } else {
+            $mw += $compoundArr[$i][0][1]*$compoundArr[$i][1];
+        }
+    }
+    return array($mw, array());
+}
+?>

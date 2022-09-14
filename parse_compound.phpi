@@ -1,0 +1,144 @@
+<?php
+/* Returns a tree-array of the logical arrangement of the atoms in the
+ * formula. An input of NaCo(NO3)4 would result in $ret[] being:
+ *  $ret[0] = array(array("Na", "22.98977"), "1");
+ *  $ret[1] = array(array("Co", "58.933200"), "1");
+ *  $ret[2] = array(array(array(array("N","14.0067"),"1"),array(array("O","15.9994"),"3")), "4");
+ * The return value is array($ret, $warnings);
+ */
+function parse_compound($compoundStr) {
+    $stage = 0; // 0 = looking for element first character,
+                // 1 = looking for element second character OR number first character OR isotope designation
+                // 2 = looking for number character or element first character
+                // 3 = looking for number character for isotope or element first character
+    $curElem = array();
+    $curNum = array();
+    $curIso = array();
+    $warnings = array();
+    $ret = array();
+    $store = false;
+    for ($i = 0; $i < strlen($compoundStr); $i++) {
+
+        $ascii = ord($compoundStr[$i]);
+        $ucl = ($ascii >= 65 && $ascii <= 90) ? (true) : (false);
+        $lcl = ($ascii >= 97 && $ascii <= 122) ? (true) : (false);
+        $num = (($ascii >= 48 && $ascii <= 57) || $ascii == 46) ? (true) : (false);
+        $open = ($ascii == 40) ? (true) : (false);
+        $iso = ($ascii == 95) ? (true) : (false);
+
+        if ($stage == 0) {
+	    if ($open == true) {
+		// Use recursion to parse item within parentheses
+		$restOfStr = strstr(substr($compoundStr,$i+1),")");
+		if ($restOfStr == false) {
+                    $warnings[] = implode(" ", array("No end parenthesis for open paren found at position", ($i+1), ". Ignoring the open parenthesis."));
+                } else {
+		    $rparsed = parse_compound(substr($compoundStr,$i+1,strlen($compoundStr)-strlen($restOfStr)-$i-1));
+                    $i = strlen($compoundStr) - strlen($restOfStr);
+		    if (count($rparsed[0]) > 0) {
+                        $curElem[] = $rparsed[0];
+                        for ($j = 0; $j < count($rparsed[1]); $j++)
+				$warnings[] = $rparsed[1][$j];
+                    	if (strlen($restOfStr) > 1)
+                    		$stage = 2;
+                    } // otherwise, nothing inside parentheses
+                }
+            } else if ($ucl == true) {
+                $curElem[0] = $compoundStr[$i];
+                $stage = 1;
+            } else if ($lcl == true) {
+                $curElem[0] = $compoundStr[$i];
+                $warnings[] = implode(" ", array("Lowercase character", $compoundStr[$i], "found at position", ($i+1), "when expecting uppercase for new element; treating as uppercase."));
+                $stage = 1;
+            } else {
+                $warnings[] = implode(" ", array("Unknown character", $compoundStr[$i], "found at position", ($i+1), "when expecting an uppercase letter for a new element. Ignoring it."));                
+            }
+
+        } else if ($stage == 1) {
+
+            if ($lcl == true) {
+                $curElem[1] = $compoundStr[$i];
+                $stage = 2;
+            } else if ($num == true) {
+                $curNum[0] = $compoundStr[$i];
+                $stage = 2;
+            } else if ($ucl == true) {
+                // It is probably a new element.  Warn, however, if it is ambiguous
+                // Suppress warning for elements beyond Radium and Co (vs CO3)
+                $gev = getElement(implode("",array($curElem[0], $compoundStr[$i])));
+                if (count($gev) > 0 && $gev[1] < 227 && strcmp($gev[0],"Co") != 0) {
+                    $warnings[] = implode(" ", array("The character sequence", implode("", array($curElem[0],$compoundStr[$i])), "found at position", ($i+1), "is ambiguous. Could be",$gev[0],"but treating",$compoundStr[$i],"as first letter of next element."));
+                }
+                $store = true;
+                $i--;
+                $stage = 0;
+            } else if ($open == true) {
+                $store = true;
+                $i--;
+                $stage = 0;
+            } else if ($iso == true) {
+                $stage = 3;
+            } else {
+                $warnings[] = implode(" ", array("Unknown character", $compoundStr[$i], "found at position", ($i+1), "when expecting an lowercase letter or number. Ignoring It."));                
+            }
+
+        } else if ($stage == 2) {
+
+            if ($num == true) {
+                $curNum[] = $compoundStr[$i];
+            } else if ($ucl == true || $lcl == true || $open == true) {
+                $store = true;
+                $i--;
+                $stage = 0;
+            } else if ($iso == true) {
+                $stage = 3;
+            } else {
+                $warnings[] = implode(" ", array("Unknown character", $compoundStr[$i], "found at position", ($i+1), "when expecting a number. Ignoring It."));                
+            }
+
+        } else if ($stage == 3) {
+
+            if ($num == true) {
+                $curIso[] = $compoundStr[$i];
+            } else if ($ucl == true || $lcl == true || $open == true) {
+                $store = true;
+                $i--;
+                $stage = 0;
+            } else {
+                $warnings[] = implode(" ", array("Unknown character", $compoundStr[$i], "found at position", ($i+1), "when expecting a number. Ignoring It."));
+            }
+        }
+
+        if ($store == true || $i+1 == strlen($compoundStr)) {
+            $okElem = false;
+            if (array_key_exists(0,$curElem)&&is_array($curElem[0])) {
+                $okElem = true;
+            } else { 
+                $gev = getElement(implode("",$curElem));
+                if (count($gev) > 0) {
+                    $okElem = true;
+                    if (count($curIso) < 1)
+                        $curIso[] = $gev[1];
+                }
+            }
+            if (count($curElem) > 0 && $okElem == true) {
+                if (count($curNum) < 1)
+                    $curNum[] = "1";
+                if (is_array($curElem[0])) {
+		    $ret[] = array($curElem[0], implode("",$curNum));
+                } else {
+                    $ret[] = array(array(implode("",$curElem), implode("",$curIso)), implode("",$curNum));
+                }
+            } else {
+                $warnings[] = implode(" ", array("Attempted to parse an unkown element:", implode("",$curElem),". Ignoring it."));
+            }
+            $store = false;
+            $curNum = array();
+            $curIso = array();
+            $curElem = array();
+        }
+
+    }
+    return array($ret, $warnings);
+}
+?>

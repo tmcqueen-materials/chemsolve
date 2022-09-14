@@ -1,0 +1,17 @@
+<?php
+function implode_r($sep, $arr) {
+    $rv = "";
+    for ($i = 0; $i < count($arr); $i++) {
+        $np = "";
+        if (is_array($arr[$i]))
+            $np = implode_r($sep, $arr[$i]);
+        else
+            $np = $arr[$i];
+        if (strlen($rv) < 1)
+            $rv = implode($sep, array($np));
+        else 
+            $rv = implode($sep, array($rv, $np));
+    }
+    return $rv;
+}
+?>

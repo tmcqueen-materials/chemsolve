@@ -1,0 +1,274 @@
+<?php
+include("elements.phpi");
+include("parse_compound.phpi");
+include("remove_dummy.phpi");
+include("apply_remap.phpi");
+include("make_flat.phpi");
+include("num_common.phpi");
+include("computeMW.phpi");
+include("implode_elem.phpi");
+include("solve_equations.phpi");
+
+// $target = string representation of target compound
+// $source = array of strings representing sources
+// $dummy = array of strings representing dummies (elements/compounds to ignore)
+// $amount = amount of material to make
+//
+// returns an array:
+// 0 = array of pairs (compound name, number of grams)
+// 1 = array of warnings
+// 2 = array of errors
+// 3 = true if successful, false if there was an error
+// 4 = effective reaction, as a string
+// 5 = subheading for effective reaction, as a string (the molecular weights)
+// 6 = milligrams of product
+function solve_amounts($target, $source, $dummy, $amount) {
+
+// We want to keep track of all warnings/errors (arrays of strings)
+$warnings = array();
+$errors = array();
+$dead = false;
+
+// Parse target compound and compute molecular weight
+$rv = parse_compound($target);
+for ($j = 0; $j < count($rv[1]); $j++)
+    $warnings[] = implode(": ", array($target, $rv[1][$j]));
+$rv = $rv[0];
+$mw = computeMW($rv);
+for ($j = 0; $j < count($mw[1]); $j++)
+    $warnings[] = implode(": ", array($target, $mw[1][$j]));
+$mw = $mw[0];
+$tgt = array($rv, $mw); // Compound as tree-array, and its molecular weight
+
+// Debug
+//echo implode_elem("",$tgt[0]), ": ", $tgt[1], "\n";
+
+// Parse source compounds and compute molecular weights
+$srcs = $source;
+$src = array();
+for ($i = 0; $i < count($srcs); $i++) {
+    $s = parse_compound($srcs[$i]);
+    for ($j = 0; $j < count($s[1]); $j++)
+        $warnings[] = implode(": ", array($srcs[$i], $s[1][$j]));
+    $s = $s[0];
+
+    $w = computeMW($s);
+    for ($j = 0; $j < count($w[1]); $j++)
+        $warnings[] = implode(": ", array($srcs[$i], $w[1][$j]));
+    $w = $w[0];
+
+    $src[$i] = array($s, $w); // Compound as tree-array, and its molecular weight
+}
+
+// Debug
+//for ($i = 0; $i < count($src); $i++)
+//    echo implode_elem("",$src[$i][0]), ": ", $src[$i][1], "\n";
+
+// There are two kind of "Dummy" balancers. The first kind represent mappings
+// (CO3 => O, NO3 => O), whereas the second kind represent elements (or units) that should
+// not be balanced. The mappings are applied only to those pieces that EXACTLY match,
+// whereas the not balancing apply to any multiples as well.
+$dbs = $dummy;
+$db = array();    // elements/units to not balance (dummy balances)
+$remap = array(); // unit mappings
+for ($i = 0; $i < count($dbs); $i++) {
+    $equiv = strstr($dbs[$i], "=");
+    if ($equiv == false) {
+        $s = parse_compound($dbs[$i]);
+        $s2 = array(array(), array());
+        $db[] = array($s[0]);
+    } else {
+        $s = parse_compound(substr($dbs[$i],0,strlen($dbs[$i])-strlen($equiv)));
+        $s2 = parse_compound(substr($dbs[$i],strlen($dbs[$i])-strlen($equiv)+1));
+        $remap[] = array($s[0], $s2[0]);
+    }
+    for ($j = 0; $j < count($s[1]); $j++)
+        $warnings[] = implode(": ", array($dbs[$i], $s[1][$j]));
+    for ($j = 0; $j < count($s2[1]); $j++)
+        $warnings[] = implode(": ", array($dbs[$i], $s2[1][$j]));
+}
+
+// Apply the mappings, undo the tree-array (make flat), apply the dummy balancers
+for ($i = 0; $i < count($src); $i++) {
+   // First, apply the mappings
+   for ($k = 0; $k < count($remap); $k++) {
+        $s = apply_remap($src[$i][0], $remap[$k]);
+        for ($j = 0; $j < count($s[1]); $j++)
+            $warnings[] = implode(": ", array($srcs[$i], $s[1][$j]));
+        $s = $s[0];
+        $src[$i][0] = $s;
+        if ($i == 0) {
+            $s = apply_remap($tgt[0], $remap[$k]);
+            for ($j = 0; $j < count($s[1]); $j++)
+                $warnings[] = implode(": ", array($target, $s[1][$j]));
+            $s = $s[0];
+            $tgt[0] = $s;            
+        }
+   }
+   // Second, make the tree-array flat
+    $s = make_flat($src[$i][0]);
+    for ($j = 0; $j < count($s[1]); $j++)
+        $warnings[] = implode(": ", array($srcs[$i], $s[1][$j]));
+    $s = $s[0];
+    $src[$i][0] = $s;
+    if ($i == 0) {
+        $s = make_flat($tgt[0]);
+        for ($j = 0; $j < count($s[1]); $j++)
+            $warnings[] = implode(": ", array($srcs[$i], $s[1][$j]));
+        $s = $s[0];
+        $tgt[0] = $s;            
+    }
+   
+   // Third, apply the dummy balancers
+   for ($k = 0; $k < count($db); $k++) {
+        $s = remove_dummy($src[$i][0], $db[$k][0]);
+        for ($j = 0; $j < count($s[1]); $j++)
+            $warnings[] = implode(": ", array($srcs[$i], $s[1][$j]));
+        $s = $s[0];
+        $src[$i][0] = $s;
+        if ($i == 0) {
+            $s = remove_dummy($tgt[0], $db[$k][0]);
+            for ($j = 0; $j < count($s[1]); $j++)
+                $warnings[] = implode(": ", array($srcs[$i], $s[1][$j]));
+            $s = $s[0];
+            $tgt[0] = $s;            
+        }
+   }
+}
+
+// Debug
+//echo $target, ": ", implode_elem("",$tgt[0]), "\n";
+//for ($i = 0; $i < count($src); $i++)
+//    echo $srcs[$i], ": ", implode_elem("",$src[$i][0]), "\n";
+
+// Move source materials to a separate list that have not-everything in common
+// with the target
+$srcInTgt = array();
+$srcNoTgt = array();
+for ($i = 0; $i < count($src); $i++) {
+    $nc = num_common($tgt[0], $src[$i][0]);
+    for ($j = 0; $j < count($nc[1]); $j++)
+        $warnings[] = implode(": ", array($srcs[$i], $nc[1][$j]));
+    $s = $src[$i];
+    $s[2] = $srcs[$i];
+    if ($nc[0] < count($src[$i][0])) {
+        $srcNoTgt[] = $s;
+    } else {
+        $srcInTgt[] = $s;
+    }
+}
+
+// Debug
+//for ($i = 0; $i < count($srcInTgt); $i++)
+//    echo implode_elem("", $srcInTgt[$i][0]), ": Useful for Target\n";
+//for ($i = 0; $i < count($srcNoTgt); $i++)
+//    echo implode_elem("", $srcNoTgt[$i][0]), ": Not Useful for Target\n";
+
+// Now we prepare to solve for the relative amounts.  First
+// make sure that the number of starting materials is less than or equal to the 
+// number of elements (so that it is solvable).
+if (count($tgt[0]) < count($srcInTgt)) {
+    $errors[] = implode("", array("The number of elements in reduced target (=", count($tgt[0]), ") is less than the number of source materials (=", count($srcInTgt), ")!  Cannot solve for quantities. This error often occurs when two starting materials differ only in oxygen content (e.g. NbO2 and Nb2O5), and oxygen is allowed to equilibrate with the atmosphere."));
+    $dead = true;
+}
+
+// Construct array/vector pair to solve, and solve it.
+if ($dead == false) {
+  $solveArr = array();
+  $solveVec = array();
+  for ($i = 0; $i < count($tgt[0]); $i++) {
+    for ($k = 0; $k < count($srcInTgt); $k++) {
+        $l = 0;
+        for (;$l < count($srcInTgt[$k][0]); $l++)
+            if (strcasecmp(implode($srcInTgt[$k][0][$l][0]), implode($tgt[0][$i][0])) == 0) break;
+        if ($l < count($srcInTgt[$k][0]))
+            $solveArr[$i][$k] = $srcInTgt[$k][0][$l][1];
+        else
+            $solveArr[$i][$k] = 0;
+    }
+    $solveVec[$i] = $tgt[0][$i][1];
+  }
+
+  // Debug
+//  print_r($solveArr);
+//  print_r($solveVec);
+
+  // Solve!
+  if (count($solveArr) > 0) {
+    $sol = solve_equations($solveArr, $solveVec);
+    if (count($sol[1]) > 0) {
+      for ($j = 0; $j < count($sol[1]); $j++)
+          $errors[] = implode(": ", array("Error During Solve", $sol[1][$j]));
+      $dead = true;
+    }
+    $sol = $sol[0];
+  } else {
+    $errors[] = "Input array does not have at least one element: source and target specified correctly?";
+    $dead = true;
+  }
+
+  //Debug
+//  print_r($sol);
+}
+
+// Make sure the result has numbers all >= 0
+if ($dead == false) {
+  for ($i = 0; $i < count($sol); $i++)
+      if ($sol[$i] < 0) {
+          $dead = true;
+          $errors[] = implode("", array("Negative value found during solve for source compound ", implode_elem("", $srcInTgt[$i][0]), " = ", $sol[$i], ". This error often occurs when it is not possible to make the target formula with the starting materials provided, such as when oxygen is <I>not</I> allowed to equilibrate with the atmosphere and the starting materials are in the wrong oxidation states."));
+      }
+}
+
+// Use the result and the molecular weights to
+// calculate the number of moles being used
+// and the number of grams of each starting
+// material.
+if ($dead == false) {
+  $tmw = 0;
+  for ($i = 0; $i < count($sol); $i++)
+      $tmw += $sol[$i]*$srcInTgt[$i][1];
+  $moles = $amount / $tmw;
+  for ($i = 0; $i < count($srcInTgt); $i++)
+      $grams[] = array(implode(" as ",array($srcInTgt[$i][2], implode_elem("", $srcInTgt[$i][0]))), $sol[$i]*$moles*$srcInTgt[$i][1]);  
+  $grams[] = array(implode(" as ",array($target, implode_elem("", $tgt[0]))), $moles*$tgt[1]);
+
+  // Write out reaction
+  $rxn = "";
+  $sub1 = "";
+  for ($i = 0; $i < count($sol); $i++) {
+      if ($i > 0) { $rxn .= " + "; $sub1 .= "   "; }
+      $atr = sprintf("%.2f %s", $sol[$i], $srcInTgt[$i][2]);
+      $rxn .= $atr;
+      $sub1 .= sprintf("%7.2f", $srcInTgt[$i][1]);
+      for ($j = 7; $j < strlen($atr); $j++) $sub1 .= " ";
+  }
+  $rxn .= "  ->  " . $target;
+  $sub1 .= "      " . sprintf("%4.2f", $tgt[1]);
+
+  // debug
+//  print_r($grams);
+// echo $rxn . "\n";
+}
+
+// debug
+//print_r($warnings);
+//print_r($errors);
+
+
+// We're done =)
+if ($dead == false) {
+    return array($grams, $warnings, $errors, true, $rxn, $sub1);
+} else {
+    // Still print out some information to help the user find the problem
+    for ($i = 0; $i < count($srcInTgt); $i++)
+          $errors[] = implode(" as ",array($srcInTgt[$i][2], implode_elem("", $srcInTgt[$i][0])));  
+    for ($i = 0; $i < count($srcNoTgt); $i++)
+          $errors[] = implode(" as ",array($srcNoTgt[$i][2], implode_elem("", $srcNoTgt[$i][0]))) . " (Not Used)";  
+    $errors[] = implode(" as ",array($target, implode_elem("", $tgt[0])));
+    if (!isset($sol)) $sol='';
+    return array($sol, $warnings, $errors, false, "", "", "");
+}
+
+}
+?>

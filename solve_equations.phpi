@@ -1,0 +1,94 @@
+<?php
+
+function rndZero($in) {
+    $tol = 1e-13;
+    if (abs($in) < $tol) return 0;
+    return $in;
+}
+
+// Use Gauss-Jordan to solve a system of equations
+// $arr should be at least square, in row-major order
+function solve_equations($arr, $res) {
+    $ro = array();
+    for ($i = 0; $i < count($res); $i++)
+        $ro[$i] = $i;
+
+    for ($c = 0; $c < count($arr[0]); $c++) {
+        $r = $c;
+
+        while ($r < count($arr) && $arr[$r][$c] == 0)
+            $r++;
+
+        if ($r < count($arr) && $r > $c) {
+            // Swap rows
+            $tmp = $arr[$c];
+            $arr[$c] = $arr[$r];
+            $arr[$r] = $tmp;
+            $tmp = $res[$c];
+            $res[$c] = $res[$r];
+            $res[$r] = $tmp;
+            $tmp = $ro[$c];
+            $ro[$c] = $ro[$r];
+            $ro[$r] = $tmp;
+        } else if ($r == $c) {
+        } else { return array($res, array("Underspecified System (" . $c . "). You need fewer starting materials.")); }
+
+        // Normalize row to 1
+        for ($k = 0; $k < count($arr[$c]); $k++)
+            if ($k != $c) $arr[$c][$k] = rndZero($arr[$c][$k]/$arr[$c][$c]);
+        $res[$c] = rndZero($res[$c]/$arr[$c][$c]);
+        $arr[$c][$c] = 1;
+
+        // For each row except this one, subtract the appropriate
+        // multiple to zero out column $c
+        for ($r = 0; $r < count($arr); $r++) {
+            if ($r != $c) {
+                for ($k = 0; $k < count($arr[$r]); $k++)
+                    if ($k != $c) $arr[$r][$k] = rndZero($arr[$r][$k] - $arr[$c][$k]*$arr[$r][$c]);
+                $res[$r] = rndZero($res[$r] - $res[$c]*$arr[$r][$c]);
+                $arr[$r][$c] = 0;
+            }
+        }
+    }
+
+    // restore row order based on $ro
+//DO NOT DO THIS!    $rv = array();
+//    $na = array();
+//    for ($i = 0; $i < count($res); $i++) {
+//        $rv[$ro[$i]] = $res[$i];
+//        $na[$ro[$i]] = $arr[$i];
+//        $rv[$i] = $res[$i];
+//        $na[$i] = $arr[$i];
+//    }
+    $rv = $res;
+    $na = $arr;
+
+//DEBUG    print_r($rv);
+
+    // If the array is not square, make
+    // sure that the number of "Zero" rows
+    // matches (rows - columns).
+    $zero = array();
+    for ($i = 0; $i < count($na); $i++) {
+        $j = 0;
+        while ($j < count($na[0])) if ($na[$i][$j] == 0) { $j++; } else { break; }
+        if ($j >= count($na[0]) && $rv[$i] == 0) $zero[] = $i;
+    }
+
+    if (count($zero)+count($arr[0]) > count($arr))
+        return array($rv, array("Underspecified system (" . count($zero) . "," . count($arr[0]) . "," . count($arr) . "). Was one of the compounds below incorrectly parsed?", "Also check to make sure atom balances are possible with the given starting materials. This error often occurs if there is more than one combination of starting materials that can produce the desired product, such as when starting with two materials that differ only in their oxygen content (e.g. Nb2O4 and Nb2O5) and oxygen <I>is</I> allowed to equilibrate with the atmosphere."));
+    else if (count($zero)+count($arr[0]) < count($arr))
+        return array($rv, array("Overspecified system (" . count($zero) . "," . count($arr[0]) . "," . count($arr). "). Was one of the compounds below incorrectly parsed?", "Also check to make sure atom balances are possible with the given starting materials. This error often occurs if it is not possible to produce the desired product with the given starting materials because of a difference in, e.g., oxygen content when oxygen is not being allowed to equilibrate with the atmosphere."));
+
+    // Return just the values that matter
+    $rv2 = array();
+    for ($j = 0, $i = 0; $i < count($rv); $i++)
+        if ((array_key_exists($j, $zero) && $zero[$j] != $i) || $j >= count($zero))
+            $rv2[] = $rv[$i];
+        else
+            $j++;
+    
+    return array($rv2, array());
+}
+
+?>

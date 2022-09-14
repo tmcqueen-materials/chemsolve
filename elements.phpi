@@ -1,0 +1,47 @@
+<?php
+
+function getElement($symbol) {
+    $elems = array(array("H", 1.00794), array("He", 4.002602), array("Li", 6.941), 
+               array("Be", 9.012182), array("B", 10.811), array("C", 12.0107),
+               array("N", 14.0067), array("O", 15.9994), array("F", 18.9984032), 
+               array("Ne", 20.1797), array("Na", 22.98977), array("Mg", 24.3050),
+               array("Al", 26.981538), array("Si", 28.0855), array("P", 30.973761),
+               array("S", 32.065), array("Cl", 35.453), array("Ar", 39.948),
+               array("K", 39.0983), array("Ca", 40.078), array("Sc", 44.955910),
+               array("Ti", 47.867), array("V", 50.9415), array("Cr", 51.9961),
+               array("Mn", 54.938049), array("Fe", 55.845), array("Co", 58.933200),
+               array("Ni", 58.6934), array("Cu", 63.546), array("Zn", 65.39), 
+               array("Ga", 69.723), array("Ge", 72.61), array("As", 74.92160), 
+               array("Se", 78.96), array("Br", 79.904), array("Kr", 83.80),
+               array("Rb", 85.4678), array("Sr", 87.62), array("Y", 88.90585),
+               array("Zr", 91.224), array("Nb", 92.90638), array("Mo", 95.94),
+               array("Tc", 98), array("Ru", 101.07), array("Rh", 102.90550),
+               array("Pd", 106.42), array("Ag", 107.8682), array("Cd", 112.411),
+               array("In", 114.818), array("Sn", 118.710), array("Sb", 121.760),
+               array("Te", 127.60), array("I", 126.90447), array("Xe", 131.29),
+               array("Cs", 132.90545), array("Ba", 137.327), array("La", 138.9055),
+               array("Ce", 140.116), array("Pr", 140.90765), array("Nd", 144.24),
+               array("Pm", 145), array("Sm", 150.36), array("Eu", 151.964), 
+               array("Gd", 157.25), array("Tb", 158.92534), array("Dy", 162.50),
+               array("Ho", 164.93032), array("Er", 167.26), array("Tm", 168.93421),
+               array("Yb", 173.04), array("Lu", 174.967), array("Hf", 178.49),
+               array("Ta", 180.9479), array("W", 183.84), array("Re", 186.207),
+               array("Os", 190.23), array("Ir", 192.217), array("Pt", 195.078),
+               array("Au", 196.96655), array("Hg", 200.59), array("Tl", 204.3833), 
+               array("Pb", 207.2), array("Bi", 208.98038), array("Po", 209),
+               array("At", 210), array("Rn", 222), array("Fr", 223), array("Ra", 226),
+               array("Ac", 227), array("Th", 232.0381), array("Pa", 231.03588),
+               array("U", 238.0289), array("Np", 237), array("Pu", 244),
+               array("Am", 243), array("Cm", 247), array("Bk", 247), array("Cf", 251),
+               array("Es", 252), array("Fm", 257), array("Md", 258), array("No", 259),
+               array("Lr", 262), array("Rf", 261), array("Db", 262), array("Sg", 266),
+               array("Bh", 264), array("Hs", 269), array("Mt", 268));
+
+    for ($i = 0; $i < count($elems); $i++) {
+        if (strcasecmp($symbol, $elems[$i][0]) == 0)
+            return $elems[$i];
+    }
+    return array();
+}
+
+?>

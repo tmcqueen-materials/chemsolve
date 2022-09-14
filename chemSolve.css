@@ -1,0 +1,156 @@
+/**
+ * Generic body settings for all pages. In reality, these settings should
+ * not show up, except for the text color as we place div's on top of
+ * it. Margin and padding = 0 are required for proper text alignment in
+ * some browsers.
+ */
+html {
+  height:           100%;
+}
+body {
+  background-color: #FEFFD0;
+  color:            black;
+  margin:           0;
+  padding:          0;
+  height:           100%;
+}
+
+/**
+ * The container also "contains" the entire document.
+ */
+div.container {
+  background-color: #FEFFD0; /* blue; */
+  width:            98%;
+  margin:           0% 1% 0% 1%;
+  padding:          0;
+}
+
+/**
+ * The warning div contains all warning and error messages from the last run.
+ */
+div.warningcontainer {
+  background-color: #FCFF00;
+  border-width:     1px 1px 1px 1px;
+  border-color:     black;
+  border-style:     solid;
+  margin-top:       10px;
+  margin-bottom:    10px;
+  padding-top:      5px;
+  padding-left:     5px;
+  padding-bottom:   5px;
+}
+
+div.warning {
+  color: black;
+}
+
+/**
+ * The error div for error messages.
+ */
+div.error {
+  color: red;
+}
+
+/**
+ * The answer div contains the answer for the last run.
+ */
+div.answercontainer {
+  background-color: #FEFFBE;
+  border-width:     1px 1px 1px 1px;
+  border-color:     black;
+  border-style:     solid;
+  margin-top:       10px;
+  margin-bottom:    10px;
+  padding-top:      5px;
+  padding-left:     5px;
+  padding-bottom:   5px;
+}
+
+div.reaction {
+  color: blue;
+  font-family: courier;
+}
+div.reactionsubs {
+  color: blue;
+  font-family: courier;
+}
+
+table.answer {
+  border:           0;
+  background-color: #FEFFBE;
+  border-collapse:  collapse;
+  text-align:       left;
+  font-weight:      normal;
+  font-size:        12pt;
+  font-family:      serif;
+}
+table.answer tr {
+  border:           2px;
+  border-color:     black;
+  border-style:     solid;
+  padding:          2px;
+}
+table.answer td {
+  border:           2px;
+  border-color:     black;
+  border-style:     solid;
+  padding:          2px;
+}
+
+div.querycontainer {
+  background-color: #FEFFBE;
+  border-width:     1px 1px 1px 1px;
+  border-color:     black;
+  border-style:     solid;
+  margin-top:       20px;
+  margin-bottom:    10px;
+  padding-top:      5px;
+  padding-left:     5px;
+  padding-bottom:   5px;
+}
+
+table.query {
+  border:           0;
+  background-color: #FEFFBE;
+  border-collapse:  collapse;
+  text-align:       left;
+  font-weight:      normal;
+  font-size:        12pt;
+  font-family:      serif;
+}
+table.query tr {
+  border:           1px;
+  border-color:     black;
+  border-style:     solid;
+  padding:          2px;
+}
+table.query td {
+  border:           1px;
+  border-color:     black;
+  border-style:     solid;
+  padding:          2px;
+}
+
+
+/**
+ * The HTML/CSS validated logos sit at
+ * the very bottom of the page, after
+ * the footer. 
+ * Want the images to have borders and
+ * have them change from white to black
+ * when the cursor moves over them.
+ */
+div.validated {
+  background-color: white;
+  text-align:       center;
+}
+div.validated a {
+  color:            white;
+}
+div.validated a:hover {
+  color:            black;
+}
+div.validated img {
+  border-color:     white;
+}
+

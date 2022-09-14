@@ -1,0 +1,26 @@
+<?php
+function implode_elem($sep, $arr) {
+    $rv = "";
+    for ($i = 0; $i < count($arr); $i++) {
+        $np = "";
+        if (is_array($arr[$i][0][0])) {
+            $np = "(" . $sep . implode_elem($sep, $arr[$i][0]) . $sep . ")";
+            if ($arr[$i][1] != 1) $np = $np . $sep . $arr[$i][1];
+        } else {
+            $np = "";
+            if (getElement($arr[$i][0][0])[1] != $arr[$i][0][1])
+                $np .= "<sup>" . $arr[$i][0][1] . "</sup>"; 
+            $np .= $arr[$i][0][0];
+            if ($arr[$i][1] != 1)
+                $np .= $sep . "<sub>" . $arr[$i][1] . "</sub>";
+        }
+        if (strlen($np) > 0) {
+          if (strlen($rv) < 1)
+            $rv = implode($sep, array($np));
+          else 
+            $rv = implode($sep, array($rv, $np));
+        }
+    }
+    return $rv;
+}
+?>

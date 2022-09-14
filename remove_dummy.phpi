@@ -1,0 +1,45 @@
+<?php
+// Removes $dummyArr as many times as
+// possible from $tgtArr.  Could be a
+// fractional # of $dummyArr removed
+function remove_dummy($tgtArr, $dummyArr) {
+    $rf = -1;
+    $warnings = array();
+    for ($i = 0; $i < count($dummyArr); $i++) {
+        $ef = 0;
+        for ($j = 0; $j < count($tgtArr); $j++) {
+            if (strcasecmp(implode($dummyArr[$i][0]), implode($tgtArr[$j][0])) == 0) {
+                $nf = $tgtArr[$j][1] / $dummyArr[$i][1];
+                if ($nf < $rf || $rf == -1)
+                    $rf = $nf;
+                $ef = 1;
+                $j = count($tgtArr);
+            }
+        }
+        if ($ef == 0)
+            $rf = 0;  // All elements in Dummy not found in target
+    }
+
+    // Don't want to modify original, passed arrays
+    $newtgt = array();
+
+    // If none to be removed, remove none
+    if ($rf <= 0)
+        $rf = 0;
+
+    // Otherwise, remove and then return
+    for ($j = 0; $j < count($tgtArr); $j++) {
+        $nt = $tgtArr[$j][1];
+        for ($i = 0; $i < count($dummyArr); $i++) {
+            if (strcasecmp(implode($dummyArr[$i][0]), implode($tgtArr[$j][0])) == 0)
+                $nt -= $rf * $dummyArr[$i][1];
+        }
+        if ($nt > 0)
+            $newtgt[] = array($tgtArr[$j][0], $nt);
+        else if ($nt < 0)
+            $warnings[] = implode(" ", array("Negative value for", $tgtArr[$j][0], "of", $nt));
+    }
+    
+    return array($newtgt, $warnings);
+}
+?>

@@ -1,0 +1,17 @@
+<?php
+// returns the number of elements common to both arrays
+function num_common($arr1, $arr2) {
+    $warnings = array();
+    $nc = 0;
+    for ($i = 0; $i < count($arr1); $i++) {
+        for ($j = 0; $j < count($arr2); $j++) {
+            if (strcasecmp(implode($arr1[$i][0]), implode($arr2[$j][0])) == 0) {
+                $nc += 1;
+                $j = count($arr2);
+            }
+        }
+    }
+
+    return array($nc, $warnings);
+}
+?>
