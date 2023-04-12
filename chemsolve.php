@@ -223,6 +223,7 @@ echo "      program ignore more complicated units (e.g. water, such as if a star
 echo "      the rest of the \"normal\" conditions, then you should put a UNIT= on the line, indicating that UNIT should be replaced with nothing,\n";
 echo "      e.g. \"CO3=O,NO3=O,O,H2O=\" for ignoring water units. \"CO3=O,NO3=O,O,H2O\" <I>would not</I> work.</li>\n";
 echo "  <li>Isotopes can now be specified. For example, you can target Sm(B_11)5B_10 , with Sm, B_11, and B_10 as starting materials.</li>\n";
+echo "  <li>This tool does not permanently store calculation results for anybody (recent use within JHU is viewable by the site operator).  Nonetheless, the code is available at <a href=\"https://github.com/tmcqueen-materials/chemsolve\">Github</a> if you would like to run it in a standalone manner.</li>\n";
 echo "</ul><br>\n";
 echo "<p><B>Please notify me of any problems! Thank you!</B></p>\n";
 echo "</div>\n";
